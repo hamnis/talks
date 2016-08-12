@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Functional JSON with Java 8</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Functional JSON with Java 8
+
+---
+
+# Agenda
+
+1. Functions: The quickest recap ever
+1. Algebraic Data Types or Coproducts where art thou
+1. Immutable-JSON
+1. Extractors
+1. Codecs
+1. Why would you even want to do this?
+???
+
+#Agenda Notes
+
+Meh
+
+---
+
+# Functions
+
+Java defines a function as a Single Abstract Method interface or SAM interface.
+
+---
+
+# Functions
+This is the simplest form of function there is. No inputs, return nothing.
+
+```java
+public interface Runnable {
+  void run() {}
+}
+```
+The only way this can be useful is to apply side effects.
+
+## Example
+
+```java
+ Runnable runner = () -> {
+   System.out.println("Hello World");
+ }
+```
+---
+
+# Functions
+
+```java
+public interface Supplier<A> {
+  A get();
+}
+```
+
+Produces a value `A`. Can also be called `Function0`. Meaning it takes no arguments, but produces some value A.
+This can be seen as a generalization of the `Runnable` interface except that it returns a value.
+
+## Example
+
+```java
+ Supplier<Integer> getFive = () -> 5
+```
+
+---
+
+# Functions
+
+```java
+public interface Function<A, B> {
+  B apply(A input);
+}
+```
+
+Produces a value `B` from an input of `A`.
+
+## Example
+
+```java
+Function<String, Integer> toInt = (a) -> Integer.parseInt(a)
+```
+---
+
+# Functions
+
+Did anyone spot a problem with the this function?
+
+```java
+Function<String, Integer> toInt = (String a) -> Integer.parseInt(a)
+```
+
+* Not all strings can be converted to Ints.
+* This means that we will get a `NumberFormatException` if we for instance pass `"five"` to this function.
+
+---
+
+# Optional
+
+We can fix the problem in the previous function by using the `java.util.Optional` type.
+
+```java
+Function<String, Optional<Integer>> toInt = (a) -> {
+  try {
+    return Optional.of(Integer.parseInt(a));
+  } catch (NumberFormatException e) {
+    return Optional.empty();
+  }
+}
+```
+
+---
+
+# Pure Functions
+
+A function should ONLY be dependant on its `inputs`.
+Calling a function with the same parameters should result in the same result **every time** it is called.
+This means that a function cannot perform any side effects.
+
+## Example
+
+```java
+Logger logger = ...;
+
+Function<String, Optional<Integer>> safeToInt = (a) -> {
+  try {
+    return Optional.of(Integer.parseInt(a));
+  } catch (NumberFormatException e) {
+    logger.info("Failed parsing " + a, e);
+    return Optional.empty();
+  }
+}
+```
+
+How many people think this is pure?
+
+---
+
+
+# Function Arity
+
+Arity just means the number of arguments.
+
+Unary - single argument
+
+Binary - two arguments
+
+---
+# Higher Order Functions ( HOF )
+
+A HOF is a function that takes a function as an argument, or returns a function.
+
+## Example
+
+```java
+public static <A,B> List<B> map(List<A> list, Function<A, B> f) {
+  List<B> newList = new ArrayList<>();
+  for (A item : list) {
+    newList.add(f.apply(item));
+  }
+  return newList;
+}
+```
+### Usage
+```java
+List<Integer> ints = map(Arrays.asList("1", "2", "3", "4"), toInt);
+```
+
+---
+class: center,middle
+# Questions so far?
+
+---
+
+# Algebraic Data Types ( ADT )
+
+This is just another Pattern™ like any GoF pattern, but embraces functions.
+
+These types are often also called `Sum-types` or `Coproducts`.
+
+The reason for why this is interesting I hope will become apparent during this talk.
+
+---
+# Example of a simple ADT
+
+## haskell
+```haskell
+data Option a = None | Some a
+```
+
+## Scala
+```scala
+sealed trait Option[A]
+
+case object None extend Option[Nothing]
+
+case class Some[A](value: A) extends Option[A]
+```
+---
+
+# ADT in Java
+```java
+public abstract class Option<A> {
+  private Option<A>() {
+  }
+
+  public static <A> Option<A> some(A value) { return new Some<>(value); }
+  public static <A> Option<A> none() { return new None(); }
+
+  public abstract <B> B fold(Supplier<B> noneF, Function<A, B> someF);
+
+  private static class Some<A> extends Option<A> {
+    private final A value;
+    public Some(A value) {
+      this.value = value;
+    }
+
+    public <B> B fold(Supplier<B> noneF, Function<A, B> someF) {
+      return someF.apply(value);
+    }
+  }
+
+  private static class None extends Option<Object> {
+    public <B> B fold(Supplier<B> noneF, Function<A, B> someF) {
+      return noneF.get();
+    }
+  }
+}
+```
+
+---
+class: center, middle
+# Immutable JSON
+
+
+???
+
+Immutable JSON started because I was tired of all mutable JSON libraries out there, and I wanted to see if it was possible
+to write a library like Argonaut or Circe in Java.
+
+
+In immutable-json, I have encoded the JSON AST using the ADT pattern.
+
+---
+
+#JSON ADT
+
+
+---
+
+# Fold
+> In functional programming, fold (also termed reduce, accumulate, aggregate, compress, or inject) refers to a family
+of higher-order functions that analyze a recursive data structure and through use of a given combining operation,
+recombine the results of recursively processing its constituent parts, building up a return value.
+Typically, a fold is presented with a combining function, a top node of a data structure,
+and possibly some default values to be used under certain conditions.
+The fold then proceeds to combine elements of the data structure's hierarchy, using the function in a systematic way.
+
+Wikipedia
+
+---
+
+
+
+
+
+
+
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
