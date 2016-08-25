@@ -155,17 +155,6 @@ Function<String, Optional<Integer>> safeToInt = (a) -> {
 How many people think this is pure?
 
 ---
-
-
-# Function Arity
-
-Arity just means the number of arguments.
-
-Unary - single argument
-
-Binary - two arguments
-
----
 # Higher Order Functions ( HOF )
 
 A HOF is a function that takes a function as an argument, or returns a function.
@@ -198,7 +187,24 @@ This is just another Pattern™ like any GoF pattern, but embraces functions.
 
 These types are often also called `Sum-types` or `Coproducts`.
 
-The reason for why this is interesting I hope will become apparent during this talk.
+We typically use this when we want to express data that are closely related and should only exist version of.
+
+Examples of typical ADTs:
+
+- Option
+--
+
+- Either
+--
+
+- Enumerations
+--
+
+- Iteratees
+--
+
+- JSON
+
 
 ---
 # Example of a simple ADT
@@ -227,7 +233,7 @@ public abstract class Option<A> {
   public static <A> Option<A> some(A value) { return new Some<>(value); }
   public static <A> Option<A> none() { return new None(); }
 
-  public abstract <B> B fold(Supplier<B> noneF, Function<A, B> someF);
+  public abstract <B> B fold(Function<A, B> someF, Supplier<B> noneF);
 
   private static class Some<A> extends Option<A> {
     private final A value;
@@ -235,18 +241,100 @@ public abstract class Option<A> {
       this.value = value;
     }
 
-    public <B> B fold(Supplier<B> noneF, Function<A, B> someF) {
+    public <B> B fold(Function<A, B> someF, Supplier<B> noneF) {
       return someF.apply(value);
     }
   }
 
   private static class None extends Option<Object> {
-    public <B> B fold(Supplier<B> noneF, Function<A, B> someF) {
+    public <B> B fold( Function<A, B> someF, Supplier<B> noneF) {
       return noneF.get();
     }
   }
 }
 ```
+---
+
+# Fold
+> In functional programming, fold (also termed reduce, accumulate, aggregate, compress, or inject) refers to a family
+of higher-order functions that analyze a recursive data structure and through use of a given combining operation,
+recombine the results of recursively processing its constituent parts, building up a return value.
+
+Wikipedia
+
+---
+
+# Fold
+```java
+  public abstract <B> B fold(Function<A, B> someF, Supplier<B> noneF);
+```
+
+Operations on `Option`
+
+- getOrElse
+--
+
+- map
+--
+
+- flatMap
+--
+
+- get
+--
+
+- getOrElseThrow
+
+
+???
+
+Having fold in mind, lets take a look at Option.fold
+We can implement most operations of Option using this fold method.
+
+Lets have a look for how that would work.
+
+---
+
+# Operations implemented using fold
+
+```java
+public A getOrElse(Supplier<A> noneF) {
+  return fold(a -> a, noneF);
+}
+```
+
+```java
+public <B> Option<B> map(Function<A, B> f) {
+  return fold(a -> Option.some(f.apply(a), Option::none);
+}
+```
+
+```java
+public <B> Option<B> flatMap(Function<A, Option<B>> f) {
+  return fold(f, Option::none);
+}
+```
+
+---
+
+# Operations implemented using fold
+
+```java
+public A get() {
+  return fold(a -> a, () -> throw new NoSuchElementException("Get on None"));
+}
+```
+
+```java
+public A getOrElseThrow(Supplier<Throwable> noneF) {
+  return fold(a -> a, () -> throw noneF.get());
+}
+```
+
+???
+
+For the astute viewers we know that the getElseOrThrow method cannot be implemented like this, because of Checked Exceptions. There are ways to get around that, but we dont have time to look at this now.
+We can also implement map in terms of flatMap and get in terms of getOrElseThrow.
 
 ---
 class: center, middle
@@ -256,7 +344,7 @@ class: center, middle
 ???
 
 Immutable JSON started because I was tired of all mutable JSON libraries out there, and I wanted to see if it was possible
-to write a library like Argonaut or Circe in Java.
+to write a library like [Argonaut](http://argonaut.io) or [Circe](http://circe.io) in Java.
 
 
 In immutable-json, I have encoded the JSON AST using the ADT pattern.
@@ -265,27 +353,219 @@ In immutable-json, I have encoded the JSON AST using the ADT pattern.
 
 #JSON ADT
 
+```java
+public abstract class Json {
+  //constructors
+
+
+  //types
+  public static abstract class JValue implements Serializable {
+      public abstract <X> X fold(Function<JString, X> fString,
+                                 Function<JBoolean, X> fBoolean,
+                                 Function<JNumber, X> fNumber,
+                                 Function<JObject, X> fObject,
+                                 Function<JArray, X> fArray,
+                                 Supplier<X> fNull);
+  }
+  public static final class JString extends JValue {}
+  public static final class JBoolean extends JValue {}
+  public static final class JNull extends JValue {}
+  public static final class JNumber extends JValue {}
+  public static final class JArray extends JValue implements Iterable<JValue> {}
+  public static final class JObject extends JValue implements
+    Iterable<Map.Entry<String, JValue>> {}
+}
+
+```
+
+---
+class: center, middle
+# Lets look at some code
+
+---
+# DecodeJson
+
+```java
+@FunctionalInterface
+public interface DecodeJson<A> {
+    DecodeResult<A> fromJson(Json.JValue value);
+
+    default <B> DecodeJson<B> map(Function<A, B> f) {
+        return (json) -> this.fromJson(json).map(f);
+    }
+
+    default <B> DecodeJson<B> flatMap(Function<A, DecodeJson<B>> f) {
+        return value -> {
+            DecodeResult<A> result = this.fromJson(value);
+            return result.flatMap(a -> f.apply(a).fromJson(value));
+        };
+    }
+}
+```
+
+
+---
+# EncodeJson
+```java
+@FunctionalInterface
+public interface EncodeJson<A> {
+    Option<Json.JValue> toJson(A value);
+
+    default <B> EncodeJson<B> contramap(Function<B, A> f) {
+        return value -> this.toJson(f.apply(value));
+    }
+}
+```
+
+---
+# Extractor
+
+
+```java
+@FunctionalInterface
+public interface Extractor<A> extends Function<Json.JObject, DecodeResult<A>> {
+
+    default DecodeJson<A> decoder() {
+        return (json) -> this.apply(json.asJsonObjectOrEmpty());
+    }
+}
+```
 
 ---
 
-# Fold
-> In functional programming, fold (also termed reduce, accumulate, aggregate, compress, or inject) refers to a family
-of higher-order functions that analyze a recursive data structure and through use of a given combining operation,
-recombine the results of recursively processing its constituent parts, building up a return value.
-Typically, a fold is presented with a combining function, a top node of a data structure,
-and possibly some default values to be used under certain conditions.
-The fold then proceeds to combine elements of the data structure's hierarchy, using the function in a systematic way.
+```java
+public abstract class TypedField<A> {
+    public final String name;
+    public final DecodeJson<A> decoder;
+
+    private TypedField(String name, DecodeJson<A> decoder) {
+        this.name = name;
+        this.decoder = decoder;
+    }
+    //Combinators (map, flatMap, narrow, default value etc)
+
+    public static TypedField<String> TString(String name) {
+        return typedFieldOf(name, Codecs.StringCodec, Option.none());
+    }
+    public static TypedField<Integer> TInt(String name) {
+        return typedFieldOf(name, Codecs.intCodec, Option.none());
+    }
+    public static TypedField<Double> TDouble(String name) {
+        return typedFieldOf(name, Codecs.doubleCodec, Option.none());
+    }
+    public static TypedField<Long> TLong(String name) {
+        return typedFieldOf(name, Codecs.longCodec, Option.none());
+    }
+    public static TypedField<Boolean> TBoolean(String name) {
+        return typedFieldOf(name, Codecs.booleanCodec, Option.none());
+    }
+    public static TJArrayField TJArray(String name) {
+        return new TJArrayField(name);
+    }
+    public static TJObjectField TJObject(String name) {
+        return new TJObjectField(name);
+    }
+    //internal implementation classes and factory method
+}
+```
+
+
+???
+
+This represents a field name in a json object and a corresponding way of decoding that type from a json value.
+Simplified a bit of course to fit on a slide.
+
+
+---
+# Extractors
+
+```java
+public static <TT, A, B, C> Extractor<TT> extract3(
+            TypedField<A> f1,
+            TypedField<B> f2,
+            TypedField<C> f3,
+            Function3<A, B, C, TT> func) {
+
+    return (object) -> {
+        DecodeResult<A> oa = DecodeResult.decode(object, f1.name, f1.decoder);
+        DecodeResult<B> ob = DecodeResult.decode(object, f2.name, f2.decoder);
+        DecodeResult<C> oc = DecodeResult.decode(object, f3.name, f3.decoder);
+        return oa.flatMap(a ->
+                ob.flatMap(b ->
+                        oc.flatMap(c ->
+                                DecodeResult.ok(func.apply(a, b, c)
+                                )
+                        )
+                )
+        );
+    };
+}
+```
+
+
+---
+class: center, middle, white
+background-color: black
+
+<h1 style="color: white; font-size: 1000%;">DEMO</h1>
+
+---
+#Isomorphism
+
+--
+>>> In mathematics, an isomorphism is a homomorphism or morphism (i.e. a mathematical mapping) that admits an inverse.
 
 Wikipedia
 
 ---
+background-color: black
+background-image: url(images/wat.jpg)
+
+---
+```java
+public interface Iso<A, B> {
+    A reverseGet(B b);
+    B get(A a);
+
+    static <A> Iso<A, A> identity() {
+        return new IdIso<>();
+    }
+}
+
+```
+
+---
+
+# Codecs
 
 
+```java
+public interface JsonCodec<A> extends EncodeJson<A>, DecodeJson<A> {
+    default <B> JsonCodec<B> xmap(Function<A, B> f, Function<B, A> g) {
+        return JsonCodec.lift(
+          value -> fromJson(value).map(f),
+          value -> toJson(g.apply(value))
+        );
+    }
+    default <B> JsonCodec<B> narrow(Function<A, Try<B>> f, Function<B, A> g) {
+        return JsonCodec.lift(tryMap(f), value -> toJson(g.apply(value)));
+    }
+    default <B> JsonCodec<B> tryNarrow(Function<A, B> f, Function<B, A> g) {
+        return narrow(a -> Try.of(() -> f.apply(a)), g);
+    }
+    default <B> JsonCodec<B> tryNarrowBoth(Function<A, B> f, Function<B, A> g) {
+        return narrowBoth(
+          a -> Try.of(() -> f.apply(a)),
+          b -> Try.of(() -> g.apply(b))
+        );
+    }
+    static <A> JsonCodec<A> lift(DecodeJson<A> decoder, EncodeJson<A> encoder) {
+        return new DefaultJsonCodec<>(decoder, encoder);
+    }
+}
+```
 
-
-
-
-
+---
 
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
