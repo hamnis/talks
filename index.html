@@ -37,8 +37,6 @@ class: center, middle
 
 #Agenda Notes
 
-Meh
-
 ---
 
 # Functions
@@ -522,6 +520,8 @@ background-color: black
 background-image: url(images/wat.jpg)
 
 ---
+# Java Encoding of an Isomorphism
+
 ```java
 public interface Iso<A, B> {
     A reverseGet(B b);
@@ -533,6 +533,43 @@ public interface Iso<A, B> {
 }
 
 ```
+
+---
+# Example
+
+```java
+public class Person {
+    public final String name;
+    public final int age;
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+   //equals, hashcode and toString
+}
+```
+
+---
+# Person Iso implementation
+
+```java
+public enum PersonIso implements Iso<Person, Tuple2<String, Integer>> {
+    INSTANCE;
+
+    @Override
+    public Person reverseGet(Tuple2<String, Integer> t) {
+        return new Person(t._1, t._2);
+    }
+
+    @Override
+    public Tuple2<String, Integer> get(Person t) {
+        return new Tuple2<>(t.name, t.age);
+    }
+}
+```
+
 
 ---
 
@@ -564,8 +601,82 @@ public interface JsonCodec<A> extends EncodeJson<A>, DecodeJson<A> {
     }
 }
 ```
+---
+# Codecs
+
+```java
+public static <TT, A, B> Function2<String,String, JsonCodec<TT>> codec2(
+  Iso<TT, Tuple2<A, B>> iso,
+  JsonCodec<A> c1,
+  JsonCodec<B> c2) {
+    return (n1,n2) -> new JsonCodec<TT>() {
+        @Override
+        public Option<Json.JValue> toJson(TT value) {
+            Tuple2<A, B> tuple = iso.get(value);
+            return c1.toJson(tuple._1).
+              flatMap(j1 -> c2.toJson(tuple._2).
+                flatMap(j2 ->
+                Option.of(Json.jObject(Json.entry(n1, j1),Json.entry(n2, j2)))));
+        }
+
+        @Override
+        public DecodeResult<TT> fromJson(Json.JValue value) {
+            Json.JObject object = value.asJsonObjectOrEmpty();
+
+            DecodeResult<A> oa = decode(object, n1, c1);
+            DecodeResult<B> ob = decode(object, n2, c2);
+            return oa.flatMap(a ->
+              ob.flatMap(b ->
+                DecodeResult.ok(iso.reverseGet(new Tuple2<>(a,b)))));
+        }
+    };
+}
+
+```
+---
+# Usage
+```java
+JsonCodec<Person> personCodec = Codecs.codec2(
+  PersonIso.INSTANCE,
+  Codecs.StringCodec,
+  Codecs.IntCodec).
+  apply("name", "age");
+```
+
+--
+```java
+JsonCodec<Person> personCodec = Codecs.codec2(
+  PersonIso.INSTANCE,
+  Codecs.StringCodec,
+  Codecs.IntCodec).
+  apply("fullName", "age");
+```
 
 ---
+# Why would I want to do this?
+
+- Correct by construction
+--
+
+- We can reason about our code
+--
+
+- NO Annotations means NO magic
+
+
+---
+class: center, middle
+# Verbosity
+
+???
+
+Java does not have some features I would like to have, so verbosity ufortunately increases.
+However, since we are correct by construction, this is not as a big problem as I initially thought.
+There are other languages on the JVM that will help you here, like Scala to name one.
+
+---
+class: center, middle
+# Questions?
 
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
