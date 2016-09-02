@@ -14,15 +14,22 @@
         font-weight: normal;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .logo {
+        position: absolute;
+        bottom: 12px;
+        left: 10px;
+      }
     </style>
   </head>
   <body>
     <textarea id="source">
-
-class: center, middle
-![Arktekk](images/arktekk.png)
-# Functional JSON with Java 8
-
+class: middle
+.center.middle[
+  # Functional JSON with Java 8
+]
+.logo[
+  <img src="images/arktekk.png" alt="Arktekk" width="100" height="100"/>
+]
 ---
 
 # Agenda
@@ -32,7 +39,7 @@ class: center, middle
 1. Immutable-JSON
 1. Extractors
 1. Codecs
-1. Why would you even want to do this?
+1. Recap
 ???
 
 #Agenda Notes
@@ -730,8 +737,8 @@ class: center, middle
 
 We have been talking about these Category theory things:
 
-- Product ( Any type with fields and accessors )
-- CoProduct ( ADT )
+- Product ( data classes with fields and accessors (Person) )
+- CoProduct ( ADT, Option, JValue )
 - Functor ( DecodeJson, DecodeResult, TypedField )
 - CoFunctor ( EncodeJson )
 - ProFunctor ( JsonCodec )
@@ -749,8 +756,9 @@ We have been talking about these Category theory things:
 ---
 class: center, middle
 # Thank you
-![Arktekk](images/arktekk.png)
-
+.logo[
+  <img src="images/arktekk.png" alt="Arktekk" width="100" height="100"/>
+]
 
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
