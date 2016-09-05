@@ -17,7 +17,7 @@
       .logo {
         position: absolute;
         bottom: 12px;
-        left: 10px;
+        left: 50px;
       }
     </style>
   </head>
@@ -110,7 +110,7 @@ Function<String, Integer> toInt = (a) -> Integer.parseInt(a)
 
 This function type is not completely accurate as defined by Java.
 For that you need to understand how Java's generic variance works, and I am not going to
-explain this in this talk.
+explain this in this talk. There is a generics talk now in room 6 that will probaly handle that.
 
 ---
 
@@ -182,11 +182,12 @@ It is possible to abstract over effects, but that will not be covered in this ta
 # Higher Order Functions ( HOF )
 
 A HOF is a function that takes a function as an argument, or returns a function.
+--
 
 ## Example
 
 ```java
-public static <A,B> List<B> map(List<A> list, Function<A, B> f) {
+public static <A, B> List<B> map(List<A> list, Function<A, B> f) {
   List<B> newList = new ArrayList<>();
   for (A item : list) {
     newList.add(f.apply(item));
@@ -194,6 +195,8 @@ public static <A,B> List<B> map(List<A> list, Function<A, B> f) {
   return newList;
 }
 ```
+--
+
 ### Usage
 ```java
 List<Integer> ints = map(Arrays.asList("1", "2", "3", "4"), toInt);
@@ -207,12 +210,24 @@ class: center,middle
 
 # Algebraic Data Types ( ADT )
 
-This is just another Pattern™ like any GoF pattern, but embraces functions.
+>>>In computer programming, more so functional programming and type theory, an algebraic data type is a kind of composite type, i.e., a type formed by combining other types.
+Two common classes of algebraic types are **product types** (i.e., tuples and records) and **sum types**, also called tagged or disjoint unions or variant types.[1]
 
-These types are often also called `Sum-types` or `Coproducts`.
+Wikipedia
 
-We typically use this when we want to express data that are closely related and should only exist version of.
-The trees are typically sealed so we can know ahead of time that there cannot be any more instances of the cases.
+**my emphasis**
+
+???
+
+We can look at this as Pattern, just like a GoF™ pattern.
+
+We typically use this when we want to express variants of a type that are closely related.
+The inhertance trees are typically sealed so we can know ahead of time that there cannot be any more instances of the cases.
+
+
+---
+
+# Algebraic Data Types ( ADT )
 
 Examples of typical ADTs:
 --
@@ -244,7 +259,7 @@ data Option a = None | Some a
 ```scala
 sealed trait Option[A]
 
-case object None extend Option[Nothing]
+case object None extends Option[Nothing]
 
 case class Some[A](value: A) extends Option[A]
 ```
@@ -313,6 +328,8 @@ Operations on `Option`
 
 
 ???
+
+A fold may be viewed as a functional Visitor.
 
 Having fold in mind, lets take a look at Option.fold
 We can implement most operations of Option using this fold method.
