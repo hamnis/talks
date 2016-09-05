@@ -35,14 +35,20 @@ class: middle
 # Agenda
 
 1. Functions: The quickest recap ever
-1. Algebraic Data Types or Coproducts where art thou
+1. Oh, Coproducts where art thou?
 1. Immutable-JSON
 1. Extractors
 1. Codecs
-1. Recap
+
 ???
 
-#Agenda Notes
+#Intro:
+Count to five...
+Last time I spoke at Javazone, I was critized for not having any Java code in my slides.
+This year there WILL be LOTS of Java code.
+
+#About me:
+I am Erlend Hamnaberg, consultant and partner working for Arktekk.
 
 ---
 
@@ -53,14 +59,12 @@ Java defines a function as a Single Abstract Method interface or SAM interface.
 ---
 
 # Functions
-This is the simplest form of function there is. No inputs, return nothing.
-
 ```java
 public interface Runnable {
   void run() {}
 }
 ```
-The only way this can be useful is to apply side effects.
+--
 
 ## Example
 
@@ -69,6 +73,11 @@ The only way this can be useful is to apply side effects.
    System.out.println("Hello World");
  }
 ```
+
+???
+This is the simplest form of function there is. No inputs, return nothing.
+The only way this can be useful is to apply side effects.
+
 ---
 
 # Functions
@@ -79,8 +88,11 @@ public interface Supplier<A> {
 }
 ```
 
+???
 Produces a value `A`. Can also be called `Function0`. Meaning it takes no arguments, but produces some value A.
 This can be seen as a generalization of the `Runnable` interface except that it returns a value.
+
+--
 
 ## Example
 
@@ -97,8 +109,13 @@ public interface Function<A, B> {
   B apply(A input);
 }
 ```
+???
 
-Produces a value `B` from an input of `A`.
+This function type is not completely accurate as defined by Java.
+For that you need to understand how Java's generic variance works, and I am not going to
+explain this in this talk. There is a generics talk now in room 6 that will probaly handle that.
+
+--
 
 ## Example
 
@@ -106,11 +123,6 @@ Produces a value `B` from an input of `A`.
 Function<String, Integer> toInt = (a) -> Integer.parseInt(a)
 ```
 
-???
-
-This function type is not completely accurate as defined by Java.
-For that you need to understand how Java's generic variance works, and I am not going to
-explain this in this talk. There is a generics talk now in room 6 that will probaly handle that.
 
 ---
 
@@ -121,11 +133,12 @@ Did anyone spot a problem with the this function?
 ```java
 Function<String, Integer> toInt = (String a) -> Integer.parseInt(a)
 ```
+
 --
 - Not all strings can be converted to Ints.
 --
 
-- This means that we will get a `NumberFormatException` if we for instance pass `"five"` to this function.
+- This means that we will get a `NumberFormatException` if we for instance pass `"five"` or `"foo"` to this function.
 
 ---
 
@@ -142,6 +155,11 @@ Function<String, Optional<Integer>> toInt = (a) -> {
   }
 }
 ```
+
+???
+This can also be called a Partial Function, since we have not a total domain space where a value may be transformed.
+
+We will discuss Optional or Option in the next section.
 
 ---
 
@@ -310,6 +328,15 @@ Wikipedia
   public abstract <B> B fold(Function<A, B> someF, Supplier<B> noneF);
 ```
 
+???
+
+A fold may be viewed as a functional Visitor.
+
+Having fold in mind, lets take a look at Option.fold
+We can implement most operations of Option using this fold method.
+
+Lets have a look for how that would work.
+
 Operations on `Option`
 
 - getOrElse
@@ -326,15 +353,6 @@ Operations on `Option`
 
 - getOrElseThrow
 
-
-???
-
-A fold may be viewed as a functional Visitor.
-
-Having fold in mind, lets take a look at Option.fold
-We can implement most operations of Option using this fold method.
-
-Lets have a look for how that would work.
 
 ---
 
@@ -599,7 +617,7 @@ public interface Iso<A, B> {
 # Example
 
 ```java
-public class Person {
+public final class Person {
     public final String name;
     public final int age;
 
@@ -716,6 +734,13 @@ JsonCodec<Person> personCodec = Codecs.codec2(
 ---
 # Why would I want to do this?
 
+???
+
+- If we can guarantee the correctness by construction, we need less tests, since we encode our problem using types.
+- Writing tests is easier, since we dont depend on side effects, meaning we can reason about the state.
+- No shared mutable state, meaning code can be shared accross threads with no problems.
+- No black magic (annotations) is just wonderful.
+
 - Correct by construction
 --
 
@@ -726,14 +751,6 @@ JsonCodec<Person> personCodec = Codecs.codec2(
 --
 
 - No Magic
-
-
-???
-
-- If we can guarantee the correctness by construction, we need less tests, since we encode our problem using types.
-- Writing tests is easier, since we dont depend on side effects, meaning we can reason about the state.
-- No shared mutable state, meaning code can be shared accross threads with no problems.
-- No black magic (annotations) is just wonderful.
 
 ---
 class: center, middle
