@@ -39,7 +39,7 @@ class: middle
 # Agenda
 
 1. Functions: The quickest recap ever
-1. Oh, Coproducts where art thou?
+1. Algebraic Data Types
 1. Immutable-JSON
 1. Extractors
 1. Codecs
@@ -132,7 +132,7 @@ Function<String, Integer> toInt = (a) -> Integer.parseInt(a)
 
 # Functions
 
-Did anyone spot a problem with the this function?
+Did anyone spot a problem with this function?
 
 ```java
 Function<String, Integer> toInt = (String a) -> Integer.parseInt(a)
@@ -169,7 +169,7 @@ We will discuss Optional or Option in the next section.
 
 # Pure Functions
 
-A function should ONLY be dependant on its `inputs`.
+To be pure a function can ONLY be dependant on its `inputs`.
 Calling a function with the same parameters should result in the same result **every time** it is called.
 This means that a function cannot perform any side effects.
 --
@@ -684,6 +684,12 @@ public interface JsonCodec<A> extends EncodeJson<A>, DecodeJson<A> {
     }
 }
 ```
+
+???
+
+Codecs can be thought of of as building blocks, just like lego. We build up a structure of the types we want,
+and combine them together to get the end result.
+
 ---
 # Codecs
 
@@ -717,23 +723,10 @@ public static <TT, A, B> Function2<String,String, JsonCodec<TT>> codec2(
 
 ```
 ---
-# Usage
-```java
-JsonCodec<Person> personCodec = Codecs.codec2(
-  PersonIso.INSTANCE,
-  Codecs.StringCodec,
-  Codecs.IntCodec).
-  apply("name", "age");
-```
+class: center, middle, white
+background-color: black
 
---
-```java
-JsonCodec<Person> personCodec = Codecs.codec2(
-  PersonIso.INSTANCE,
-  Codecs.StringCodec,
-  Codecs.IntCodec).
-  apply("fullName", "age");
-```
+<h1 style="color: white; font-size: 1000%;">DEMO</h1>
 
 ---
 # Why would I want to do this?
