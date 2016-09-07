@@ -53,6 +53,7 @@ This year there WILL be LOTS of Java code.
 
 #About me:
 I am Erlend Hamnaberg, consultant and partner working for Arktekk.
+We are a small consultancy specializing in Scala and Java.
 
 Before we start. Quickly by show of hands, how many has Never Seen the Function syntax in java?
 
@@ -153,7 +154,7 @@ Function<String, Integer> toInt = (String a) -> Integer.parseInt(a)
 We can fix the problem in the previous function by using the `java.util.Optional` type.
 
 ```java
-Function<String, Optional<Integer>> toInt = (a) -> {
+Function<String, Optional<Integer>> safeToInt = (a) -> {
   try {
     return Optional.of(Integer.parseInt(a));
   } catch (NumberFormatException e) {
