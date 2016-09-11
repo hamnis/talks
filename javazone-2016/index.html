@@ -372,7 +372,7 @@ public A getOrElse(Supplier<A> noneF) {
 
 ```java
 public <B> Option<B> map(Function<A, B> f) {
-  return fold(a -> Option.some(f.apply(a), Option::none);
+  return fold(a -> Option.some(f.apply(a)), Option::none);
 }
 ```
 
