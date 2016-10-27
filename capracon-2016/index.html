@@ -190,42 +190,42 @@ Om man feks har 204 No Content, så kan man alltids lese den som 200 OK, om man 
 ---
 class: center, middle
 background-color: black
-![100 Continue](http://http.cat/100)
+![100 Continue](https://http.cat/100)
 
 ---
 class: center, middle
 background-color: black
-![200 OK](http://http.cat/200)
+![200 OK](https://http.cat/200)
 
 ---
 class: center, middle
 background-color: black
-![204 No Content](http://http.cat/204)
+![204 No Content](https://http.cat/204)
 
 ---
 class: center, middle
 background-color: black
-![302 Found](http://http.cat/302)
+![302 Found](https://http.cat/302)
 
 ---
 class: center, middle
 background-color: black
-![303 See Other](http://http.cat/303)
+![303 See Other](https://http.cat/303)
 
 ---
 class: center, middle
 background-color: black
-![304 Not Modified](http://http.cat/304)
+![304 Not Modified](https://http.cat/304)
 
 ---
 class: center, middle
 background-color: black
-![404 Not Found](http://http.cat/404)
+![404 Not Found](https://http.cat/404)
 
 ---
 class: center, middle
 background-color: black
-![410 Gone](http://http.cat/410)
+![410 Gone](https://http.cat/410)
 
 ???
 Brukes for å indikere at noe har blitt slettet.
@@ -234,7 +234,7 @@ Feks når man gjør DELETE for andre gang.
 ---
 class: center, middle
 background-color: black
-![451 Unavailable for legal reasons](http://http.cat/451)
+![451 Unavailable for legal reasons](https://http.cat/451)
 
 ???
 Jeg kan forestille meg mange ting denne kan misbrukes til.
@@ -243,7 +243,7 @@ Men hovedsak var det for å løfte feks Great Firewall of China til HTTP nivå.
 ---
 class: center, middle
 background-color: black
-![503 Service unavailable](http://http.cat/503)
+![503 Service unavailable](https://http.cat/503)
 
 ???
 
@@ -280,7 +280,7 @@ Accept: application/json
 Content-Type: application/json
 {
   "templates": {
-    "person": "http://example.com/person/{id}"
+    "person": "https://example.com/person/{id}"
   },
   "list": [
     {"name": "John Doe", "id": 1},
@@ -306,7 +306,7 @@ den andre ressursen. og selvfølgelig hvordan kontrolleren fungerer.
 
 ```
 <a rel="index" href="/">Gå til Root</a> <!-- Gå dit -->
-<img src="http://http.cat/451" alt="foo"/> <!-- Gå dit og hent innholdet hit -->
+<img src="https://http.cat/451" alt="foo"/> <!-- Gå dit og hent innholdet hit -->
 
 <!-- Endre url til /person?id=<innhold-i-input[id].value> og gå dit -->
 <form method="get" action="/person">
@@ -384,7 +384,7 @@ Accept: application/json
 Content-Type: application/json
 {
   "templates": {
-    "person": "http://example.com/person/{id}"
+    "person": "https://example.com/person/{id}"
   },
   "list": [
     {"name": "John Doe", "id": 1},
@@ -402,10 +402,10 @@ GET /person
 200 OK
 Content-Type: application/json
 {
-  "href": "http://example.com/person",
+  "href": "https://example.com/person",
   "items": [
-    {"name": "John Doe", "href": "http://example.com/person/1"},
-    {"name": "Jane Doe", "href": "http://example.com/person/2"}
+    {"name": "John Doe", "href": "https://example.com/person/1"},
+    {"name": "Jane Doe", "href": "https://example.com/person/2"}
   ]
 }
 ```
@@ -427,16 +427,16 @@ GET /person
 Content-Type: application/json
 {
   "links": {
-    "self": "http://example.com/person"
+    "self": "https://example.com/person"
   },
   "items": [
-    {"name": "John Doe", "links": { "edit": "http://example.com/person/1" } },
-    {"name": "Jane Doe", "links": { "edit": "http://example.com/person/2" } }
+    {"name": "John Doe", "links": { "edit": "https://example.com/person/1" } },
+    {"name": "Jane Doe", "links": { "edit": "https://example.com/person/2" } }
   ]
 }
 ```
 
-[`edit`](http://www.iana.org/assignments/link-relations/link-relations.xml) betyr feks at vi kan gjøre `HEAD,GET,PUT,DELETE`.
+[`edit`](https://www.iana.org/assignments/link-relations/link-relations.xml) betyr feks at vi kan gjøre `HEAD,GET,PUT,DELETE`.
 
 ???
 Nå har vi løftet links til et eget objekt, der nøkkel er navnet på lenken.
@@ -453,15 +453,15 @@ GET /person
 Content-Type: application/vnd+collection+json
 {
   "collection": {
-      "href": "http://example.com/person",
+      "href": "https://example.com/person",
       "items": [
         {
           "data": [ "name": "name", "value" : "John Doe" ],
-          "links": [ {"rel": "edit", "href": "http://example.com/person/1" }]
+          "links": [ {"rel": "edit", "href": "https://example.com/person/1" }]
         },
         {
           "data": [ "name": "name", "value" : "Jane Doe" ],
-          "links": [ {"rel": "edit", "href": "http://example.com/person/2" }]
+          "links": [ {"rel": "edit", "href": "https://example.com/person/2" }]
         }
       ]
   }
@@ -486,16 +486,16 @@ Content-Type: application/vnd+siren+json
 {
   "entity": {
     "links": [
-      {"href": "http://example.com/person", "rel": ["self"] }
+      {"href": "https://example.com/person", "rel": ["self"] }
     ],
     "entities": [
       {
         "properties": { "name": "John Doe" },
-        "links": [ {"href": "http://example.com/person/1", "rel": ["edit"] } ]
+        "links": [ {"href": "https://example.com/person/1", "rel": ["edit"] } ]
       },
       {
         "properties": { "name": "Jane Doe" },
-        "links": [ {"href": "http://example.com/person/2", "rel": ["edit"] } ]
+        "links": [ {"href": "https://example.com/person/2", "rel": ["edit"] } ]
       }
     ]
   }
@@ -602,6 +602,8 @@ Der finnes mekanismer for dette, og det blir kalt profiler.
 --
 
 * RDF
+
+Dette teamet er kjempestort og krever sitt eget foredrag
 
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
