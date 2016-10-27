@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HTTP-APIer kan være så mye mer enn bare JSON</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      img {
+        max-height: 600px;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# HTTP-APIer kan være så mye mer enn bare JSON
+
+---
+
+# Scenesetting
+
+tegning:
+
+Frontend med JS ->  HTTP -> Backend  -> Database
+
+???
+I denne klassiske sammenhengen så gjør man nøyaktig hva man vil.
+Her finnes ingen begrensninger på hvordan man skal gjøre det.
+I feks en typisk Jquery applikasjon så kan man ikke en gang bruke
+HTTP statuskoder, for det fører til at en logger "rødt" i konsollet.
+Men kan dette gjøres bedre?
+Svaret på dette er selvfølgelig ja. Om man dropper Jquery, og bruker feks
+request.js eller fetch.js, så får man noe som gjør dette mer behagelig.
+
+---
+# Enkle HTTP-baserte tjenester
+
+---
+## Tjenestene under leverer `application/json`
+
+```
+GET /person/
+POST /person
+GET /person/123
+PUT /person/123
+DELETE /person/123
+```
+
+???
+Hvor mange her tror at dette er REST?
+
+--
+## Uansett hvor mye REST du tror dette er, så ER dette RPC.
+
+---
+# Men alle sier jo at dette er REST
+
+--
+## Dette er det samme interfacet men vi bruker RMI i stedet.
+
+```java
+interface PersonRemoteInterface {
+  List<Person> getPersons() throws RemoteException;
+  Person getPerson(int id) throws RemoteException;
+  int createPerson(Person p) throws RemoteException;
+  int updatePerson(Person p) throws RemoteException;
+  void deletePerson(Person p) throws RemoteException;
+}
+```
+
+???
+Problemet i dette eksempelet er at når man koder mot dette, evt en generert klient,
+så er det veldig vanskelig for tjenesten å endre seg. Alt blir derfor veldig skjørt,
+og det fører til mye koordinering for å få endringene ut til alle klientene samtidig.
+Har man bare en klient, så er dette peanuts. Go nuts.
+En får akkurat de samme oppgraderingsproblemene når man hardkoder mot hvilke
+paths/query man bruker. Da begynner folk å snakke om hvordan versjonerer vi interfacet,
+i stedet for å se på de fundamentale problemene.
+
+---
+class: center, middle
+
+# En detour via OSI modellen
+
+???
+Hvor mange kjenner til OSI modellen?
+
+--
+![OSI Modellen](osi.png)
+
+???
+Som vi ser i fra modellen så er HTTP på nivå 7, applikasjonsnivået.
+Når man behandler HTTP som å være på nivå 4, Transportlaget, så mister man
+mange av fordelene med HTTP. Jeg håper å få belyst noen av disse fordelene i
+dette foredraget.
+
+---
+# Hvordan går vi i retning mot REST?
+
+* Bruk headere, ikke bare body.
+* Bruk statuskoder.
+* Bruk uri-templates.
+* Bruk lenker.
+* webconcepts.info
+---
+
+# Headere
+
+## Caching
+
+* ETag, If-None-Match
+* Last-Modified, If-Modified-Since
+* Cache-Control
+
+## Eksempel
+```
+GET /foo
+If-None-Match: "etag-fra-forrige-response"
+
+304 Not Modified
+```
+
+???
+
+Her kan jeg gi mange eksempler, men det kan være nyttig å se foredraget mitt fra Javazone i 2012.
+
+---
+# Headere
+
+## Hvordan kan responsen variere basert på request
+
+* Accept, Accept-Language
+* Vary
+
+## Eksempel
+```
+GET /foo
+Accept: application/json
+Accept-Language: en
+
+200 OK
+Content-Type: application/json
+Content-Language: en
+Vary: Accept-Language
+
+{"foo": "some english text"}
+```
+
+---
+# Headere
+
+## Hvilke HTTP-metoder er lov å bruke
+
+* Allow
+
+## Eksempel
+```
+OPTIONS /foo
+
+200 OK
+Allow: GET,HEAD,PUT,POST,DELETE,OPTIONS
+```
+---
+# [Statuskoder](https://tools.ietf.org/html/rfc7231#section-6)
+
+* 1xx Informational
+* 2xx Successful
+* 3xx Redirection
+* 4xx Client Error
+* 5xx Server Error
+
+???
+
+Det finnes bruk for de fleste statuskoder.
+Om man ikke forstår en statuskode som er brukt, så kan man alltid "upcaste" den.
+Om man feks har 204 No Content, så kan man alltids lese den som 200 OK, om man ikke forstår hva
+204 betyr.
+
+---
+class: center, middle
+background-color: black
+![100 Continue](http://http.cat/100)
+
+---
+class: center, middle
+background-color: black
+![200 OK](http://http.cat/200)
+
+---
+class: center, middle
+background-color: black
+![204 No Content](http://http.cat/204)
+
+---
+class: center, middle
+background-color: black
+![302 Found](http://http.cat/302)
+
+---
+class: center, middle
+background-color: black
+![303 See Other](http://http.cat/303)
+
+---
+class: center, middle
+background-color: black
+![304 Not Modified](http://http.cat/304)
+
+---
+class: center, middle
+background-color: black
+![404 Not Found](http://http.cat/404)
+
+---
+class: center, middle
+background-color: black
+![410 Gone](http://http.cat/410)
+
+???
+Brukes for å indikere at noe har blitt slettet.
+Feks når man gjør DELETE for andre gang.
+
+---
+class: center, middle
+background-color: black
+![451 Unavailable for legal reasons](http://http.cat/451)
+
+???
+Jeg kan forestille meg mange ting denne kan misbrukes til.
+Men hovedsak var det for å løfte feks Great Firewall of China til HTTP nivå.
+
+---
+class: center, middle
+background-color: black
+![503 Service unavailable](http://http.cat/503)
+
+???
+
+Denne kan man bruke om serveren er overbelastet.
+Om man feks legger på RetryAfter headeren, så
+kan man få automatisk retry etter den gitte perioden.
+
+---
+# [URI templates](https://tools.ietf.org/html/rfc6570)
+## RFC 6570
+
+```
+{ "personTemplate": "https://example.com/person/{id}" }
+```
+
+
+???
+Dette løsriver litt hvordan serveren kan bygge opp urlen sin,
+og vi kan kode mot hvordan vi ekspanderer urlen, i stedet for å vite hele strukturen.
+
+Dette er en spesifikasjon som kom i 2012 og den har formalisert hvordan
+man skriver URI templates. Her vil man typisk bruke et bibliotek, for dette kan være litt
+tricky å skrive selv.
+
+
+---
+# Hvordan bruker vi dette da?
+
+```
+GET /person/
+Accept: application/json
+
+200 OK
+Content-Type: application/json
+{
+  "templates": {
+    "person": "http://example.com/person/{id}"
+  },
+  "list": [
+    {"name": "John Doe", "id": 1},
+    {"name": "Jane Doe", "id": 2}
+  ]
+}
+```
+
+---
+# Lenker
+
+???
+
+Nå kommer vi inn på det som jeg er veldig opptatt av.
+Lenker, eller hypermedia kontroller, er ekstremt kraftige saker.
+Disse enkle tingene muliggjør at vi kan fortelle brukeren av
+APIet hvordan han eller hun kan navigere seg videre. Det som man
+typisk koder mot er, navnet til lenka, eller relasjonen til
+den andre ressursen. og selvfølgelig hvordan kontrolleren fungerer.
+
+--
+## Eksempel HTML
+
+```
+<a rel="index" href="/">Gå til Root</a> <!-- Gå dit -->
+<img src="http://http.cat/451" alt="foo"/> <!-- Gå dit og hent innholdet hit -->
+
+<!-- Endre url til /person?id=<innhold-i-input[id].value> og gå dit -->
+<form method="get" action="/person">
+  <input type="text" name="id"></input>
+  <input type="submit"></input>
+</form>
+
+<!-- Send data til /person som en annen Content-Type -->
+<form method="post" action="/person" enctype="application/x-www-form-urlencoded">
+  <input type="text" name="name"></input>
+  <input type="submit"></input>
+</form>
+```
+
+>>> Tag'en er hypermedia control'en, ikke URI.
+
+---
+# Hypermedia formater
+
+???
+Det finnes en hel haug av hypermediaformater.
+Her er noen.
+
+--
+* application/atom+xml
+--
+
+* application/atomsvc+xml
+--
+
+* application/atomcat+xml
+--
+
+* application/vnd.collection+json
+--
+
+* application/vnd.siren+json
+--
+
+* application/vnd.hal+json
+--
+
+* application/ld+json ( Med hydra vokabular )
+--
+
+* application/problem+json
+--
+
+* text/vcard
+--
+
+* text/calendar
+--
+
+* text/html
+
+
+???
+
+En god del av disse formatene har jeg brukt i forskjellige APIer.
+
+---
+class: middle, center
+# Vel og bra, men hvordan hjelper dette meg?
+
+---
+
+# Person tjeneste
+
+```
+GET /person/
+Accept: application/json
+
+200 OK
+Content-Type: application/json
+{
+  "templates": {
+    "person": "http://example.com/person/{id}"
+  },
+  "list": [
+    {"name": "John Doe", "id": 1},
+    {"name": "Jane Doe", "id": 2}
+  ]
+}
+```
+
+---
+# Med lenker
+
+```
+GET /person
+
+200 OK
+Content-Type: application/json
+{
+  "href": "http://example.com/person",
+  "items": [
+    {"name": "John Doe", "href": "http://example.com/person/1"},
+    {"name": "Jane Doe", "href": "http://example.com/person/2"}
+  ]
+}
+```
+
+???
+Hva har vi oppnådd nå?
+Det som vi nå ser er at database-id som var der fra før, er borte.
+Dette gjør det mulig for serveren, å endre hvordan den lager personlinkene.
+Vi har fortsatt ikke så veldig mye mer enn en json streng med et rart navn.
+
+---
+
+# Generalisert link-system
+
+```
+GET /person
+
+200 OK
+Content-Type: application/json
+{
+  "links": {
+    "self": "http://example.com/person"
+  },
+  "items": [
+    {"name": "John Doe", "links": { "edit": "http://example.com/person/1" } },
+    {"name": "Jane Doe", "links": { "edit": "http://example.com/person/2" } }
+  ]
+}
+```
+
+[`edit`](http://www.iana.org/assignments/link-relations/link-relations.xml) betyr feks at vi kan gjøre `HEAD,GET,PUT,DELETE`.
+
+???
+Nå har vi løftet links til et eget objekt, der nøkkel er navnet på lenken.
+Her har jeg benyttet meg av navn fra IANA link-relation registeret.
+Disse navnene har spesielle betydninger.
+
+---
+# [collection+json](https://github.com/collection-json/spec)
+
+```
+GET /person
+
+200 OK
+Content-Type: application/vnd+collection+json
+{
+  "collection": {
+      "href": "http://example.com/person",
+      "items": [
+        {
+          "data": [ "name": "name", "value" : "John Doe" ],
+          "links": [ {"rel": "edit", "href": "http://example.com/person/1" }]
+        },
+        {
+          "data": [ "name": "name", "value" : "Jane Doe" ],
+          "links": [ {"rel": "edit", "href": "http://example.com/person/2" }]
+        }
+      ]
+  }
+}
+```
+
+???
+Visuelt sett er kanskje ikke det peneste formatet.
+Men det er veldig generelt, og modellerer dette problemet veldig fint.
+En kan også skrive EN funksjon for å transformere dette til noe som
+er behagelig å bruke i Javascript, eller i feks Java.
+Tanken bak dette er ikke at man overfører objekter, men meldinger.
+
+---
+# [Siren](https://github.com/kevinswiber/siren)
+
+```
+GET /person
+
+200 OK
+Content-Type: application/vnd+siren+json
+{
+  "entity": {
+    "links": [
+      {"href": "http://example.com/person", "rel": ["self"] }
+    ],
+    "entities": [
+      {
+        "properties": { "name": "John Doe" },
+        "links": [ {"href": "http://example.com/person/1", "rel": ["edit"] } ]
+      },
+      {
+        "properties": { "name": "Jane Doe" },
+        "links": [ {"href": "http://example.com/person/2", "rel": ["edit"] } ]
+      }
+    ]
+  }
+}
+```
+
+---
+class: middle, center
+# [Webconcepts.info](http://webconcepts.info)
+
+???
+Dette er en tjenste som samler inn forskjellige typer spesifikasjoner, og
+tilgjengeliggjør de på en standard måte. De finnes både i en XML og JSON variant.
+Litt av poenget er feks at du kan linke til hvilke webconcepts du støtter,
+og så kan klienter verifisere om du faktisk støtter disse konseptene.
+
+Dette er en tjeneste laget av Erik Wilde, og virker som en veldig nyttig ting.
+
+---
+class: middle, center
+background-color: black
+![And now for something completely different](https://media.giphy.com/media/oWWfwpLj5l0XK/giphy.gif)
+
+
+---
+# Vanlige problemer (Arkitektur)
+
+```
+                                                  <->  MS1
+JS SPA -> APP backend (med session ) ->  auth
+                                                  <->  MS2
+```
+
+MS1 og MS2 kan ha helt forskjellige formater.
+
+???
+Dette kan være en artiktektur som er ganske vanlig.
+En må ha en AUTH server som kommuniserer med hver enkelt app,
+men også til bruker. Bruker logger inn i APP, som så sender dette
+til Auth, som får tilbake tokens.
+Disse tokene kan ikke deles med JS direkte, pga manglende kryptering
+eller andre grunner. OAuth2 Bearer tokens feks.
+
+---
+# Vanlige problemer (Arkitektur)
+
+## Løsning 1
+
+* App backend => Mirroring Reverse Proxy med Session state
+* Mirror av URL struktur for MS1 og MS2
+* Om vi bruker hypermedia i MS1 eller MS2, parse, og rewrite urler til intern mapping
+
+???
+
+Jeg vil tippe at JS SPA ikke kan snakke med MS1 og MS2 direkte av en eller annen grunn.
+Feks firewallregler.
+
+Vi kan dermed lage `App Backend` til en `Mirroring Reverse Proxy`, som har en mirror av
+url-strukturen på `MS1` og `MS2`, for å dermed, gjøre en rewrite av alle urler i responsen for å gå til
+seg selv,
+
+---
+# Vanlige problemer (Arkitektur)
+
+## Løsning 2
+* App backend => Rewriting Reverse Proxy med Session state
+* apiproxy?href=
+* Mirror av URL struktur for MS1 og MS2
+* Om vi bruker hypermedia i MS1 eller MS2, parse, og rewrite urler til /apiproxy=?href=url
+
+???
+
+URlene til denne løsningen blir veldig stygge, men det kan man delvis løse opp i i egne mappinger som
+rewriter noen av disse.
+Det er viktig at alle urler som refererer til MS1 eller MS2, får en prefix til Appbackend/apiproxy?href=
+Denne ressursen må også beskyttes slik at man ikke kan injecte hva som helst URL tilbake mot apiproxy.
+
+---
+class: middle, center
+# Vokalubar eller profiler
+
+???
+
+Når man snakker om forskjellige dialekter innenfor JSON, og man skal feks
+kombinerer forskjellige tjenester, som leverer samme type data, men feks
+på forskjellige formater, så kan det være nyttig å bruke samme vokabular.
+Feks at data-felter heter det samme.
+Der finnes mekanismer for dette, og det blir kalt profiler.
+
+---
+# Vokalubar eller profiler
+
+--
+
+* [Schema.org](https://schema.org/)
+--
+
+* [RFC 6906](https://tools.ietf.org/html/rfc6906)
+
+--
+
+* JSON-LD
+
+--
+
+* RDF
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
