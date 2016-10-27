@@ -574,6 +574,67 @@ Det er viktig at alle urler som refererer til MS1 eller MS2, får en prefix til 
 Denne ressursen må også beskyttes slik at man ikke kan injecte hva som helst URL tilbake mot apiproxy.
 
 ---
+# [Caching](https://vimeo.com/49305646)
+
+???
+Et foredrag om HTTP kan ikke gå utenom caching.
+Enkelt forklart finnes det to forskjellige modeller. Og de kan kombineres.
+
+--
+
+* Time based
+
+  - Cache-Control: max-age=sec
+
+--
+
+* Validation based
+
+  - ETag
+  - Last-Modified
+
+???
+
+Jeg har holdt et times foredrag på Javazone 2012, om man ønsker å gå i detalj. Video finnes på vimeo.
+En caveat i denne sammenhengen her, er at om man kombinerer data fra flere tjenster, og disse
+er selv cachebare, så bør
+
+---
+# Caching
+
+Om man kombinerer data fra flere kilder, som i seg selv er cachebare, eller en eller begge kildene er ikke er cachebare,
+så gjelder da den korteste tid, og egentlig bør denne være kortere.
+
+--
+
+## Eksempel
+```
+GET /aggregate/person/124
+
+    GET /ms1/person/124
+
+    200 OK
+    Cache-Control: max-age=10
+
+    GET /ms2/address/person/124
+
+    200 OK
+    Cache-Control: max-age=20
+
+200 OK
+Cache-control: max-age=5
+
+.. aggregate-data
+```
+
+---
+
+# Optimistisk låsing
+
+
+
+
+---
 class: middle, center
 # Vokalubar eller profiler
 
