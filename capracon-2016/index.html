@@ -54,13 +54,18 @@ Svaret på dette er selvfølgelig ja. Om man dropper Jquery, og bruker feks
 request.js eller fetch.js, så får man noe som gjør dette mer behagelig.
 
 ---
-# Enkle HTTP-baserte tjenester
+class: center, middle
+Enkle HTTP-baserte tjenster
+
+???
+Veldig lett å bygge nå, siden tooling har blitt veldig bra de siste årene.
+Det er veldig lett å bygge ting for å automagisk serialisere til JSON.
 
 ---
 ## Tjenestene under leverer `application/json`
 
 ```
-GET /person/
+GET /people
 POST /person
 GET /person/123
 PUT /person/123
@@ -71,12 +76,24 @@ DELETE /person/123
 Hvor mange her tror at dette er REST?
 
 --
-## Uansett hvor mye REST du tror dette er, så ER dette RPC.
+## Uansett hvor mye REST du tror dette er, så ER dette en form for RPC.
 
 ---
 # Men alle sier jo at dette er REST
 
---
+* Vi har jo pene urler.
+* Vi bruker HTTP verbene
+* Vi har tilogmed en swagger-fil som beskriver dette.
+* Men; vi lager et API for jQuery, så da kan vi ikke bruke statuskoder.
+
+???
+Ingen av disse tingene gjør at man tilfredstiller kravene for å kunne kalle noe REST.
+Swagger + plain JSON gjør at dette blir en form for RPC. La oss se litt på det.
+
+---
+![RMM](richardson.png)
+
+---
 ## Dette er det samme interfacet men vi bruker RMI i stedet.
 
 ```java
@@ -101,7 +118,7 @@ i stedet for å se på de fundamentale problemene.
 ---
 class: center, middle
 
-# En detour via OSI modellen
+# OSI modellen
 
 ???
 Hvor mange kjenner til OSI modellen?
@@ -114,10 +131,6 @@ Som vi ser i fra modellen så er HTTP på nivå 7, applikasjonsnivået.
 Når man behandler HTTP som å være på nivå 4, Transportlaget, så mister man
 mange av fordelene med HTTP. Jeg håper å få belyst noen av disse fordelene i
 dette foredraget.
-
----
-# Richardson Maturity Model
-![RMM](richardson.png)
 
 ---
 # Hvordan går vi i retning mot REST?
@@ -135,6 +148,9 @@ dette foredraget.
 * ETag, If-None-Match
 * Last-Modified, If-Modified-Since
 * Cache-Control
+
+???
+Jeg kommer tilbake til caching litt senere.
 
 ---
 # Headere
@@ -806,8 +822,21 @@ Den burde sikkert blitt oppdatert til å ta med seg de endringene som har skjedd
 class: middle, center
 ![Restful Web Apis](web-apis.jpg)
 
+---
 
+# Versjonering
 
+* Don't do it.
+* Bygg heller apier som benytter seg av utvidbare modeller, som er gjennomtenkt på forhånd.
+* HTML har aldri fjernet noe, men bare lagt til.
+
+???
+Versjonering er ikke det du vil ha. Du vil ha utvidbarhet og at ting kan utvikle seg over tid.
+For å få dette til, er det sånn at du ikke kan bygge apier som er veldig tilpasset en enkelt klient,
+men en må bygge mer generelle ting, som igjen vil kunne serialisere/deserialiseres til en
+domene modell som brukes på server/klient. Merk nå at jeg ikke snakker om data, men om
+byggesteinene til grunnformatet. Det vil alltid være en form for konvolutt, for man har metadata
+som må være med.
 
 ---
 # Verdens raskeste gjennomgang av REST
