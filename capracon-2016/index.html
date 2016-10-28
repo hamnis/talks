@@ -626,6 +626,22 @@ rewriter noen av disse.
 Det er viktig at alle urler som refererer til MS1 eller MS2, får en prefix til Appbackend/apiproxy?href=
 Denne ressursen må også beskyttes slik at man ikke kan injecte hva som helst URL tilbake mot apiproxy.
 
+
+---
+# Vanlige problemer (Arkitektur)
+
+## Løsning 3
+* App backend => Kun en enkel tjeneste som kobler sammen ting
+* Auth returnerer tokens som kan sendes i JS
+* MS1 og MS2 er eksponert til verden.
+* TLS client sertifikater.
+
+???
+
+Her har vi nå løsnet på kravene til MS1 og MS2 og latt de bli eksponert for verden. Samtidig har vi lagt på
+TLS klient sertifikater som gjør det mulig å ha tokens som kan caches, for de er ugyldige utene sertifikat.
+Det finnes løsninger for dette allerede deployet i dag.
+
 ---
 # [Caching](https://vimeo.com/49305646)
 
