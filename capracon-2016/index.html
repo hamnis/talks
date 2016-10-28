@@ -17,6 +17,11 @@
         max-height: 600px;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .logo {
+        position: absolute;
+        bottom: 12px;
+        left: 50px;
+      }
     </style>
   </head>
   <body>
@@ -26,11 +31,16 @@ class: center, middle
 
 # HTTP-APIer kan være så mye mer enn bare JSON
 
+Erlend Hamnaberg
+
+@hamnis
+
+.logo[
+  <img src="arktekk.png" alt="Arktekk" width="100" height="100"/>
+]
 ---
 
 # Scenesetting
-
-tegning:
 
 Frontend med JS ->  HTTP -> Backend  -> Database
 
@@ -106,13 +116,16 @@ mange av fordelene med HTTP. Jeg håper å få belyst noen av disse fordelene i
 dette foredraget.
 
 ---
+# Richardson Maturity Model
+![RMM](richardson.png)
+
+---
 # Hvordan går vi i retning mot REST?
 
-* Bruk headere, ikke bare body.
-* Bruk statuskoder.
-* Bruk uri-templates.
-* Bruk lenker.
-* webconcepts.info
+* Bruk headere, ikke bare body
+* Bruk statuskoder
+* Bruk uri-templates
+* Bruk lenker
 ---
 
 # Headere
@@ -122,18 +135,6 @@ dette foredraget.
 * ETag, If-None-Match
 * Last-Modified, If-Modified-Since
 * Cache-Control
-
-## Eksempel
-```
-GET /foo
-If-None-Match: "etag-fra-forrige-response"
-
-304 Not Modified
-```
-
-???
-
-Her kan jeg gi mange eksempler, men det kan være nyttig å se foredraget mitt fra Javazone i 2012.
 
 ---
 # Headere
@@ -489,18 +490,54 @@ Content-Type: application/vnd+siren+json
       {"href": "https://example.com/person", "rel": ["self"] }
     ],
     "entities": [
-      {
-        "properties": { "name": "John Doe" },
+      { "properties": { "name": "John Doe" },
         "links": [ {"href": "https://example.com/person/1", "rel": ["edit"] } ]
       },
-      {
-        "properties": { "name": "Jane Doe" },
+      { "properties": { "name": "Jane Doe" },
         "links": [ {"href": "https://example.com/person/2", "rel": ["edit"] } ]
       }
     ]
-  }
+  },
+  "actions": [
+    { "name": "create",
+      "title": "Add person",
+      "method": "POST",
+      "fields": [ { "name": "name", "type": "text"}]
+    }
+  ]
 }
 ```
+---
+class: middle, center
+# Vokalubar eller profiler
+
+???
+
+Når man snakker om forskjellige dialekter innenfor JSON, og man skal feks
+kombinerer forskjellige tjenester, som leverer samme type data, men feks
+på forskjellige formater, så kan det være nyttig å bruke samme vokabular.
+Feks at data-felter heter det samme.
+Der finnes mekanismer for dette, og det blir kalt profiler.
+
+---
+# Vokalubar eller profiler
+
+--
+
+* [Schema.org](https://schema.org/)
+--
+
+* [RFC 6906](https://tools.ietf.org/html/rfc6906)
+
+--
+
+* JSON-LD
+
+--
+
+* RDF
+
+Dette teamet er kjempestort og krever sitt eget foredrag
 
 ---
 class: middle, center
@@ -584,7 +621,7 @@ Enkelt forklart finnes det to forskjellige modeller. Og de kan kombineres.
 
 * Time based
 
-  - Cache-Control: max-age=sec
+  - Cache-Control: max-age=sec, s-maxage=sec
 
 --
 
@@ -596,14 +633,78 @@ Enkelt forklart finnes det to forskjellige modeller. Og de kan kombineres.
 ???
 
 Jeg har holdt et times foredrag på Javazone 2012, om man ønsker å gå i detalj. Video finnes på vimeo.
-En caveat i denne sammenhengen her, er at om man kombinerer data fra flere tjenster, og disse
-er selv cachebare, så bør
+
+---
+# Time based caching
+
+Cache-Control: max-age=sec, s-maxage=sec
+
+## Eksempel
+```
+GET /foo
+Cache-Control: max-age=60
+```
+
+???
+Dette betyr at HELE responsen lever i 60 sekunder.
+s-maxage gjelder kun for proxier, så dette betyr at i eksempelet til transforming proxy,
+så blir det denne verdien man skal benytte om den finnes.
+
+---
+
+# Validation based caching
+## ETags
+```
+GET /foo
+ETag: "fooo"
+
+
+GET /foo
+If-None-Match: "fooo"
+
+304 Not Modified
+```
+
+---
+```
+GET /foo
+ETag: "fooo"
+
+GET /foo
+If-None-Match: "foooaaaaa"
+
+200 OK
+```
+
+---
+# Validation based caching
+## Last-Modified
+```
+GET /foo
+Last-Modified: HTTP-Date-Oppløsning-i-sekunder
+
+GET /foo
+If-Modified-Since: HTTP-Date-Oppløsning-i-sekunder
+
+304 Not Modified
+```
+
+---
+```
+GET /foo
+Last-Modified: HTTP-Date-Oppløsning-i-sekunder + 10 sekunder
+
+GET /foo
+If-Modified-Since: HTTP-Date-Oppløsning-i-sekunder
+
+200 OK
+```
 
 ---
 # Caching
 
-Om man kombinerer data fra flere kilder, som i seg selv er cachebare, eller en eller begge kildene er ikke er cachebare,
-så gjelder da den korteste tid, og egentlig bør denne være kortere.
+Om man kombinerer data fra flere kilder, som i seg selv er cachebare så gjelder da den korteste tid, og egentlig bør denne være kortere.
+En huskeregel kan være å halvere denne tiden. Er en av ressursene ikke cachebar, så er heller ikke kombinasjonen cachebar.
 
 --
 
@@ -631,40 +732,104 @@ Cache-control: max-age=5
 
 # Optimistisk låsing
 
-
-
-
----
-class: middle, center
-# Vokalubar eller profiler
+* ETag
+* If-Match
 
 ???
 
-Når man snakker om forskjellige dialekter innenfor JSON, og man skal feks
-kombinerer forskjellige tjenester, som leverer samme type data, men feks
-på forskjellige formater, så kan det være nyttig å bruke samme vokabular.
-Feks at data-felter heter det samme.
-Der finnes mekanismer for dette, og det blir kalt profiler.
+Som en sideeffekt av valideringsbasert caching, så kan man oppnå optimistisk låsning.
 
 ---
-# Vokalubar eller profiler
+# Optimistisk låsing
 
---
+## Eksempel
+```
+GET /person
 
-* [Schema.org](https://schema.org/)
---
+200 OK
+ETag: "foo"
 
-* [RFC 6906](https://tools.ietf.org/html/rfc6906)
+{}
 
---
+PUT /person
+If-Match: "foo"
+data...
 
-* JSON-LD
+204 No Content
+```
 
---
+---
+# Optimistisk låsing
 
-* RDF
+## Eksempel
+```
+GET /person
 
-Dette teamet er kjempestort og krever sitt eget foredrag
+200 OK
+ETag: "foo"
+
+data..
+
+PUT /person
+If-Match: "foobar"
+data..
+
+412 Precondition Failed
+```
+
+---
+# Optimistisk låsing påkrevd, men mangler
+
+## Eksempel
+```
+GET /person
+
+200 OK
+ETag: "foo"
+
+data...
+
+PUT /person
+data...
+
+428 Precondition Required
+```
+---
+class: middle, center
+![Restful Webservices Cookbook](cookbook.jpg)
+
+???
+Mye av det jeg har snakket om hittil, er beskrevet i denne boka.
+Den burde sikkert blitt oppdatert til å ta med seg de endringene som har skjedd i HTTP siden RFC-2616.
+
+---
+class: middle, center
+![Restful Web Apis](web-apis.jpg)
+
+
+
+
+---
+# Verdens raskeste gjennomgang av REST
+
+* Client-Server
+* Stateless protocol
+* Cache
+* Uniform interface
+* Layered System
+* Code-on-Demand ( Optional )
+
+???
+Om man ikke synes REST er riktig for tjensten, da bør man også vurdere om HTTP er den riktige
+plattformen å basere seg på. Kanskje man da bør gå i retning av websockets, om man MÅ tunnelere gjennom
+port 80 eller 443.
+
+---
+class: middle, center
+TAKK
+
+Erlend Hamnaberg
+@hamnis
 
     </textarea>
     <script src="js/remark-latest.min.js">
